@@ -1,0 +1,210 @@
+﻿@page "/register/{EventId:int}"
+@using EventEase.Services
+@using EventEase.Models
+@inject EventService EventService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Registro - EventEase</PageTitle>
+
+@if (isLoading)
+{
+    <div class="container text-center mt-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+}
+else if (currentEvent == null)
+{
+    <div class="container text-center mt-5">
+        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+        <h2>Evento no encontrado</h2>
+        <p class="text-muted">El evento que buscas no existe.</p>
+        <a href="/events" class="btn btn-primary">
+            <i class="fas fa-arrow-left me-2"></i>Volver a Eventos
+        </a>
+    </div>
+}
+else if (registrationComplete)
+{
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white text-center">
+                        <h2><i class="fas fa-check-circle me-2"></i>¡Registro Exitoso!</h2>
+                    </div>
+                    <div class="card-body text-center">
+                        <h4>Te has registrado exitosamente para:</h4>
+                        <h3 class="text-primary">@currentEvent.Name</h3>
+
+                        <div class="alert alert-info mt-4">
+                            <h5>Detalles de tu registro:</h5>
+                            <p><strong>Nombre:</strong> @registration.FullName</p>
+                            <p><strong>Email:</strong> @registration.Email</p>
+                            <p><strong>Evento:</strong> @currentEvent.FormattedDate</p>
+                            <p><strong>Ubicación:</strong> @currentEvent.Location</p>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <a href="/event-details/@currentEvent.Id" class="btn btn-primary btn-lg">
+                                <i class="fas fa-eye me-2"></i>Ver Detalles del Evento
+                            </a>
+                            <a href="/events" class="btn btn-outline-primary">
+                                <i class="fas fa-calendar me-2"></i>Ver Más Eventos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="/events">Eventos</a></li>
+                <li class="breadcrumb-item"><a href="/event-details/@currentEvent.Id">@currentEvent.Name</a></li>
+                <li class="breadcrumb-item active">Registro</li>
+            </ol>
+        </nav>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-user-plus me-2"></i>Registro para: @currentEvent.Name
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong><i class="fas fa-info-circle me-2"></i>Información del Evento:</strong><br>
+                            <strong>Fecha:</strong> @currentEvent.FormattedDate<br>
+                            <strong>Ubicación:</strong> @currentEvent.Location<br>
+                            <strong>Lugares disponibles:</strong> @currentEvent.AvailableSpots
+                        </div>
+
+                        <EditForm Model="@registration" OnValidSubmit="@HandleValidSubmit">
+                            <DataAnnotationsValidator />
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nombre *</label>
+                                    <InputText @bind-Value="registration.FirstName" class="form-control" />
+                                    <ValidationMessage For="@(() => registration.FirstName)" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Apellidos *</label>
+                                    <InputText @bind-Value="registration.LastName" class="form-control" />
+                                    <ValidationMessage For="@(() => registration.LastName)" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email *</label>
+                                    <InputText type="email" @bind-Value="registration.Email" class="form-control" />
+                                    <ValidationMessage For="@(() => registration.Email)" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Teléfono</label>
+                                    <InputText @bind-Value="registration.Phone" class="form-control" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Empresa/Organización</label>
+                                <InputText @bind-Value="registration.Company" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Comentarios adicionales</label>
+                                <InputTextArea @bind-Value="registration.Comments" class="form-control" rows="3" />
+                            </div>
+
+                            <div class="form-check mb-4">
+                                <InputCheckbox @bind-Value="registration.AcceptTerms" class="form-check-input" id="terms" />
+                                <label class="form-check-label" for="terms">
+                                    Acepto los términos y condiciones del evento *
+                                </label>
+                                <ValidationMessage For="@(() => registration.AcceptTerms)" />
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg" disabled="@(!currentEvent.IsAvailable || isSubmitting)">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <text>Procesando...</text>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <text>Confirmar Registro</text>
+                                    }
+                                </button>
+                                <a href="/event-details/@currentEvent.Id" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Cancelar
+                                </a>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int EventId { get; set; }
+
+    private Event? currentEvent;
+    private Registration registration = new();
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private bool registrationComplete = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentEvent = await EventService.GetEventByIdAsync(EventId);
+        if (currentEvent != null)
+        {
+            registration.EventId = currentEvent.Id;
+        }
+        isLoading = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (currentEvent == null || !currentEvent.IsAvailable) return;
+
+        isSubmitting = true;
+
+        try
+        {
+            var success = await EventService.RegisterForEventAsync(registration);
+            if (success)
+            {
+                registrationComplete = true;
+                // Refresh event data to show updated registration count
+                currentEvent = await EventService.GetEventByIdAsync(EventId);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error - in a real app, you'd want proper error handling
+            Console.WriteLine($"Error during registration: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+
+        StateHasChanged();
+    }
+}

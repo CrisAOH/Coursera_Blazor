@@ -1,0 +1,89 @@
+﻿@page "/events"
+@using EventEase.Services
+@using EventEase.Models
+@inject EventService EventService
+@rendermode InteractiveServer
+
+<PageTitle>Eventos - EventEase</PageTitle>
+
+<div class="page-header">
+    <div class="container text-center">
+        <h1 class="display-4 mb-3">
+            <i class="fas fa-calendar me-3"></i>Todos los Eventos
+        </h1>
+        <p class="lead">Explora nuestra colección completa de eventos</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3>Eventos Disponibles (@filteredEvents.Count)</h3>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="filter" id="all" checked="@(filterType == "all")" @onchange="@(() => SetFilter("all"))">
+                    <label class="btn btn-outline-primary" for="all">Todos</label>
+                    <input type="radio" class="btn-check" name="filter" id="available" checked="@(filterType == "available")" @onchange="@(() => SetFilter("available"))">
+                    <label class="btn btn-outline-primary" for="available">Disponibles</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando eventos...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var eventItem in filteredEvents)
+            {
+                <EventCard Event="eventItem" />
+            }
+        </div>
+
+        @if (!filteredEvents.Any())
+        {
+            <div class="text-center mt-5">
+                <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                <h4>No hay eventos disponibles</h4>
+                <p class="text-muted">No se encontraron eventos con los filtros aplicados.</p>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Event> allEvents = new();
+    private List<Event> filteredEvents = new();
+    private string filterType = "all";
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allEvents = await EventService.GetEventsAsync();
+        ApplyFilter();
+        isLoading = false;
+    }
+
+    private void SetFilter(string filter)
+    {
+        filterType = filter;
+        ApplyFilter();
+        StateHasChanged();
+    }
+
+    private void ApplyFilter()
+    {
+        filteredEvents = filterType switch
+        {
+            "available" => allEvents.Where(e => e.IsAvailable).ToList(),
+            _ => allEvents
+        };
+    }
+}
